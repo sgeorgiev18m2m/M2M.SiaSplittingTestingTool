@@ -174,6 +174,9 @@ namespace M2M.SiaSplittingTestingTool
                 //#4875|NRP0|OFA4|OFT3
                 message = message.Replace("|O", "|N");
 
+                // #5585|NFA0210/FA0216/|NYR0000/FJ0030
+                message = message.Replace("/|N", "|N");
+
                 // #123456|Nri01/TA008*'Zone 8'NM/TA007*'Zone 7'NM/TA006*'Zone 6'NM|Nri01/TA005*'Zone 5'NM|Nri01/TA004*'Zone 4'NM
                 //string regexTmplExtended = "^#(?<accountno>[A-Z,0-9]{4,6})([|]N(?<partitions>(?<time>/?ti\\d{1,2}:\\d{1,2})?(?<group>/?ri\\w{1,2})?(?<user>/?id\\w{1,4})?(?<module>/?pi\\w{1,3})?(?<events>/?[A-Z]{2}(?:\\w{1,4})?)+(?<additional>([*]'[^|]*)*))+)+$";
                 //string regexTmplExtended = "^#(?<accountno>[A-Z,0-9]{4,6})([|]N(?<partitions>(?<time>/?ti\\d{1,2}:\\d{1,2})?(?<group>/?ri\\w{1,2})?(?<user>/?id\\w{1,4})?(?<module>/?pi\\w{1,3})?((?<events>/?[A-Z]{2}(?:\\w{1,4})?)(?<additional>([*]'[^/|]+)))+)+)+$";
@@ -264,7 +267,7 @@ namespace M2M.SiaSplittingTestingTool
 
                                 if (match1.Groups["time"].Success)
                                 {
-                                    string time = firstPartitionElementAppended ? match1.Groups["time"].Value : match1.Groups["time"].Value.Replace("/", "");
+                                    string time = firstPartitionElementAppended ? match1.Groups["time"].Value : RemoveLeadingSlash(match1.Groups["time"].Value);
 
                                     sbLog.Append(time);
                                     firstPartitionElementAppended = true;
@@ -272,14 +275,14 @@ namespace M2M.SiaSplittingTestingTool
 
                                 if (match1.Groups["group"].Success)
                                 {
-                                    string group = firstPartitionElementAppended ? match1.Groups["group"].Value : match1.Groups["group"].Value.Replace("/", "");
+                                    string group = firstPartitionElementAppended ? match1.Groups["group"].Value : RemoveLeadingSlash(match1.Groups["group"].Value);
                                     sbLog.Append(group);
                                     firstPartitionElementAppended = true;
                                 }
 
                                 if (match1.Groups["user"].Success)
                                 {
-                                    string user = firstPartitionElementAppended ? match1.Groups["user"].Value : match1.Groups["user"].Value.Replace("/", "");
+                                    string user = firstPartitionElementAppended ? match1.Groups["user"].Value : RemoveLeadingSlash(match1.Groups["user"].Value);
 
                                     sbLog.Append(user);
 
@@ -288,7 +291,7 @@ namespace M2M.SiaSplittingTestingTool
 
                                 if (match1.Groups["module"].Success)
                                 {
-                                    string module = firstPartitionElementAppended ? match1.Groups["module"].Value : match1.Groups["module"].Value.Replace("/", "");
+                                    string module = firstPartitionElementAppended ? match1.Groups["module"].Value : RemoveLeadingSlash(match1.Groups["module"].Value);
                                     sbLog.Append(module);
 
                                     firstPartitionElementAppended = true;
@@ -324,7 +327,7 @@ namespace M2M.SiaSplittingTestingTool
                                 sbLog.Append(matchExtended.Groups["accountno"].Value);
                                 sbLog.Append("|N");
 
-                                sbLog.Append(matchExtended.Groups["partitions"].Captures[p].Value.Replace("/", ""));
+                                sbLog.Append(matchExtended.Groups["partitions"].Captures[p].Value);
 
                                 splitEvents.Add(sbLog.ToString());
                             }
@@ -350,47 +353,69 @@ namespace M2M.SiaSplittingTestingTool
                                 return matchReg.Value[0] + "|AXmit"; // Add "|" before "AXmit"
                             }
                             // XX Xmit
-                            else if (matchReg.Value[0] != '|' && matchReg.Value[1] != 'A') 
+                            else if (matchReg.Value[0] != '|' && matchReg.Value[1] != 'A')
                             {
                                 return matchReg.Value[0] + matchReg.Value[1] + "|AXmit"; // Add "|A" before "Xmit"
                             }
                             else
                             {
-                                return matchReg.Value;
+                                return matchReg.Value; // Default case
                             }
                         });
                     }
 
                     if (message.Contains("A="))
                     {
-                        string patternAEquals = @".{1}?A=";
+                        string patternAEquals = @".{2}A=";
 
                         message = Regex.Replace(message, patternAEquals, matchReg =>
                         {
-                            if (matchReg.Value[0] != 'A')
+                            // |AA=
+                            if (matchReg.Value[0] == '|' && matchReg.Value[1] == 'A')
                             {
-                                return matchReg.Value[0] + "|AA="; //  Add "|A" before "A="
+                                return matchReg.Value;
+                            }
+                            // X AA=
+                            else if (matchReg.Value[0] != '|' && matchReg.Value[1] == 'A')
+                            {
+                                return matchReg.Value[0] + "|AA="; // Add "|" before "AA="
+                            }
+                            // XX A=
+                            else if (matchReg.Value[0] != '|' && matchReg.Value[1] != 'A')
+                            {
+                                return matchReg.Value[0] + matchReg.Value[1] + "|AA="; // Add "|A" before "A="
                             }
                             else
                             {
-                                return "AA="; // If "|A" already exists, don't change it
+                                return matchReg.Value; // Default case
                             }
                         });
                     }
 
                     if (message.Contains("BI="))
                     {
-                        string patternBEquals = @".{1}?BI=";
+                        string patternBEquals = @".{2}BI=";
 
                         message = Regex.Replace(message, patternBEquals, matchReg =>
                         {
-                            if (matchReg.Value[0] != 'A')
+                            // |ABI=
+                            if (matchReg.Value[0] == '|' && matchReg.Value[1] == 'A')
                             {
-                                return matchReg.Value[0] + "|ABI="; //  Add "|A" before "BI="
+                                return matchReg.Value;
+                            }
+                            // X ABI=
+                            else if (matchReg.Value[0] != '|' && matchReg.Value[1] == 'A')
+                            {
+                                return matchReg.Value[0] + "|ABI="; // Add "|" before "ABI="
+                            }
+                            // XX BI=
+                            else if (matchReg.Value[0] != '|' && matchReg.Value[1] != 'A')
+                            {
+                                return matchReg.Value[0] + matchReg.Value[1] + "|ABI="; // Add "|A" before "BI="
                             }
                             else
                             {
-                                return "ABI="; // If "|A" already exists, don't change it
+                                return matchReg.Value; // Default case
                             }
                         });
                     }
@@ -446,8 +471,8 @@ namespace M2M.SiaSplittingTestingTool
 
                                 string eventToAppend = match.Groups["events"].Captures[i].Value;
 
-                                if (eventToAppend[0] == '/' && sbLog.ToString().EndsWith("|N"))
-                                    eventToAppend = eventToAppend.Replace("/", "");
+                                if (sbLog.ToString().EndsWith("|N"))
+                                    eventToAppend = RemoveLeadingSlash(eventToAppend);
 
                                 sbLogEvent.Append(eventToAppend);
 
@@ -489,7 +514,7 @@ namespace M2M.SiaSplittingTestingTool
 
                                     if (match1.Groups["time"].Success)
                                     {
-                                        string time = firstPartitionElementAppended ? match1.Groups["time"].Value : match1.Groups["time"].Value.Replace("/", "");
+                                        string time = firstPartitionElementAppended ? match1.Groups["time"].Value : RemoveLeadingSlash(match1.Groups["time"].Value);
 
                                         sbLog.Append(time);
                                         firstPartitionElementAppended = true;
@@ -497,14 +522,14 @@ namespace M2M.SiaSplittingTestingTool
 
                                     if (match1.Groups["group"].Success)
                                     {
-                                        string group = firstPartitionElementAppended ? match1.Groups["group"].Value : match1.Groups["group"].Value.Replace("/", "");
+                                        string group = firstPartitionElementAppended ? match1.Groups["group"].Value : RemoveLeadingSlash(match1.Groups["group"].Value);
                                         sbLog.Append(group);
                                         firstPartitionElementAppended = true;
                                     }
 
                                     if (match1.Groups["user"].Success)
                                     {
-                                        string user = firstPartitionElementAppended ? match1.Groups["user"].Value : match1.Groups["user"].Value.Replace("/", "");
+                                        string user = firstPartitionElementAppended ? match1.Groups["user"].Value : RemoveLeadingSlash(match1.Groups["user"].Value);
 
                                         sbLog.Append(user);
 
@@ -513,7 +538,7 @@ namespace M2M.SiaSplittingTestingTool
 
                                     if (match1.Groups["module"].Success)
                                     {
-                                        string module = firstPartitionElementAppended ? match1.Groups["module"].Value : match1.Groups["module"].Value.Replace("/", "");
+                                        string module = firstPartitionElementAppended ? match1.Groups["module"].Value : RemoveLeadingSlash(match1.Groups["module"].Value);
                                         sbLog.Append(module);
                                         firstPartitionElementAppended = true;
                                     }
@@ -526,8 +551,8 @@ namespace M2M.SiaSplittingTestingTool
 
                                         string eventToAppend = match.Groups["events"].Captures[i].Value;
 
-                                        if (eventToAppend[0] == '/' && sbLog.ToString().EndsWith("|N"))
-                                            eventToAppend = eventToAppend.Replace("/", "");
+                                        if (sbLog.ToString().EndsWith("|N"))
+                                            eventToAppend = RemoveLeadingSlash(eventToAppend);
 
                                         sbLogEvent.Append(eventToAppend);
 
@@ -662,6 +687,22 @@ namespace M2M.SiaSplittingTestingTool
 
                     exitSection = SiaExitSection.NoSplit;
                 }
+            }
+        }
+        static string RemoveLeadingSlash(string s)
+        {
+            if (string.IsNullOrEmpty(s))
+            {
+                return s;
+            }
+
+            if (s.StartsWith("/"))
+            {
+                return s.Substring(1);
+            }
+            else
+            {
+                return s;
             }
         }
     }
