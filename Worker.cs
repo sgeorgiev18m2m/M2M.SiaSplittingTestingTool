@@ -341,7 +341,6 @@ namespace M2M.SiaSplittingTestingTool
                     message = AppendMissingAdditionalSectionHeader(message, "BI=");
                     message = AppendMissingAdditionalSectionHeader(message, "AI=");
                     message = AppendMissingAdditionalSectionHeader(message, "DI=");
-                    message = AppendMissingAdditionalSectionHeader(message, "U=");
 
                     // #0000|NTT10IA|A B0 Z10 Zone 10|NIA|A B0
                     // #0000|NTR10|A B0 Z10 Zone 10|NTR600|A B0 Panel Lid
@@ -646,12 +645,13 @@ namespace M2M.SiaSplittingTestingTool
                     // ?AXmit
                     else if (matchReg.Value[0] != '|' && matchReg.Value[1] == 'A')
                     {
-                        return matchReg.Value[0] + "|A" + pattern; // Add "|" before "AXmit"
+                        return matchReg.Value[0].ToString() + "|A" + pattern; // Add "|" before "AXmit"
                     }
                     // ??Xmit
                     else if (matchReg.Value[0] != '|' && matchReg.Value[1] != 'A')
                     {
-                        return matchReg.Value[0] + matchReg.Value[1] + "|A" + pattern; // Add "|A" before "Xmit"
+                        // .ToString() is mandatory!!! char is converted to int
+                        return matchReg.Value[0].ToString() + matchReg.Value[1].ToString() + "|A" + pattern; // Add "|A" before "Xmit"
                     }
                     // |?Xmit
                     else
