@@ -83,7 +83,7 @@ namespace M2M.SiaSplittingTestingTool
                         siaNoSplitEvents.Clear();
                     }
 
-                    sia = DatabaseManager.GetTwoHundredThousandEvents();
+                    sia = DatabaseManager.GetTwoHundredThousandEvents(sia[sia.Count - 1].Id);
                 }
             }
             while (sia.Count > 0);

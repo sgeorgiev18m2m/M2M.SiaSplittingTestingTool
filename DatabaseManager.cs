@@ -34,7 +34,7 @@ namespace M2M.SiaSplittingTestingTool
 
             return siaList;
         }
-        public static List<SiaEvent> GetTwoHundredThousandEvents(int? id = null)
+        public static List<SiaEvent> GetTwoHundredThousandEvents(Int64? id = null)
         {
             List<SiaEvent> siaList = new List<SiaEvent>();
 
@@ -46,7 +46,7 @@ namespace M2M.SiaSplittingTestingTool
 
                 if (id != null && id > 0)
                 {
-                    query += "AND ID > " + id + " ";
+                    query += "AND ID < " + id + " ";
                 }
 
                 query += "order by id desc ";
