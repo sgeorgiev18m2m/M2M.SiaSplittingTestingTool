@@ -336,89 +336,12 @@ namespace M2M.SiaSplittingTestingTool
                 }
                 else
                 {
-                    if (message.Contains("Xmit"))
-                    {
-                        string patternXmit = @".{2}Xmit";
-
-                        message = Regex.Replace(message, patternXmit, matchReg =>
-                        {
-                            // |AXmit
-                            if (matchReg.Value[0] == '|' && matchReg.Value[1] == 'A')
-                            {
-                                return matchReg.Value;
-                            }
-                            // X AXmit
-                            else if (matchReg.Value[0] != '|' && matchReg.Value[1] == 'A')
-                            {
-                                return matchReg.Value[0] + "|AXmit"; // Add "|" before "AXmit"
-                            }
-                            // XX Xmit
-                            else if (matchReg.Value[0] != '|' && matchReg.Value[1] != 'A')
-                            {
-                                return matchReg.Value[0] + matchReg.Value[1] + "|AXmit"; // Add "|A" before "Xmit"
-                            }
-                            else
-                            {
-                                return matchReg.Value; // Default case
-                            }
-                        });
-                    }
-
-                    if (message.Contains("A="))
-                    {
-                        string patternAEquals = @".{2}A=";
-
-                        message = Regex.Replace(message, patternAEquals, matchReg =>
-                        {
-                            // |AA=
-                            if (matchReg.Value[0] == '|' && matchReg.Value[1] == 'A')
-                            {
-                                return matchReg.Value;
-                            }
-                            // X AA=
-                            else if (matchReg.Value[0] != '|' && matchReg.Value[1] == 'A')
-                            {
-                                return matchReg.Value[0] + "|AA="; // Add "|" before "AA="
-                            }
-                            // XX A=
-                            else if (matchReg.Value[0] != '|' && matchReg.Value[1] != 'A')
-                            {
-                                return matchReg.Value[0] + matchReg.Value[1] + "|AA="; // Add "|A" before "A="
-                            }
-                            else
-                            {
-                                return matchReg.Value; // Default case
-                            }
-                        });
-                    }
-
-                    if (message.Contains("BI="))
-                    {
-                        string patternBEquals = @".{2}BI=";
-
-                        message = Regex.Replace(message, patternBEquals, matchReg =>
-                        {
-                            // |ABI=
-                            if (matchReg.Value[0] == '|' && matchReg.Value[1] == 'A')
-                            {
-                                return matchReg.Value;
-                            }
-                            // X ABI=
-                            else if (matchReg.Value[0] != '|' && matchReg.Value[1] == 'A')
-                            {
-                                return matchReg.Value[0] + "|ABI="; // Add "|" before "ABI="
-                            }
-                            // XX BI=
-                            else if (matchReg.Value[0] != '|' && matchReg.Value[1] != 'A')
-                            {
-                                return matchReg.Value[0] + matchReg.Value[1] + "|ABI="; // Add "|A" before "BI="
-                            }
-                            else
-                            {
-                                return matchReg.Value; // Default case
-                            }
-                        });
-                    }
+                    message = AppendMissingAdditionalSectionHeader(message, "Xmit");
+                    message = AppendMissingAdditionalSectionHeader(message, "A=");
+                    message = AppendMissingAdditionalSectionHeader(message, "BI=");
+                    message = AppendMissingAdditionalSectionHeader(message, "AI=");
+                    message = AppendMissingAdditionalSectionHeader(message, "DI=");
+                    message = AppendMissingAdditionalSectionHeader(message, "U=");
 
                     // #0000|NTT10IA|A B0 Z10 Zone 10|NIA|A B0
                     // #0000|NTR10|A B0 Z10 Zone 10|NTR600|A B0 Panel Lid
@@ -704,6 +627,40 @@ namespace M2M.SiaSplittingTestingTool
             {
                 return s;
             }
+        }
+        static string AppendMissingAdditionalSectionHeader(string message, string pattern)
+        {
+            // For example, if pattern is "Xmit"
+            if (message.Contains(pattern))
+            {
+                // check the two symbols before the pattern
+                string patternRegex = @".{2}" + pattern;
+
+                message = Regex.Replace(message, patternRegex, matchReg =>
+                {
+                    // |AXmit
+                    if (matchReg.Value[0] == '|' && matchReg.Value[1] == 'A')
+                    {
+                        return matchReg.Value; // exactly matching the pattern with |A in front of it
+                    }
+                    // ?AXmit
+                    else if (matchReg.Value[0] != '|' && matchReg.Value[1] == 'A')
+                    {
+                        return matchReg.Value[0] + "|A" + pattern; // Add "|" before "AXmit"
+                    }
+                    // ??Xmit
+                    else if (matchReg.Value[0] != '|' && matchReg.Value[1] != 'A')
+                    {
+                        return matchReg.Value[0] + matchReg.Value[1] + "|A" + pattern; // Add "|A" before "Xmit"
+                    }
+                    // |?Xmit
+                    else
+                    {
+                        return matchReg.Value; // Unrecognized, don't modify it
+                    }
+                });
+            }
+            return message;
         }
     }
 }
