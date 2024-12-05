@@ -77,7 +77,7 @@ namespace M2M.SiaSplittingTestingTool
                         siaMultipleEvents.Clear();
                     }
 
-                    if (siaNoSplitEvents.Count > 10000)
+                    if (siaNoSplitEvents.Count > 100000)
                     {
                         CreateXlxsFile(SiaExitSection.NoSplit, siaNoSplitEvents);
                         siaNoSplitEvents.Clear();
@@ -87,6 +87,24 @@ namespace M2M.SiaSplittingTestingTool
                 }
             }
             while (sia.Count > 0);
+
+            if (siaSingleEvent.Count > 0)
+            {
+                CreateXlxsFile(SiaExitSection.OneEventCapture, siaSingleEvent);
+                siaSingleEvent.Clear();
+            }
+
+            if (siaMultipleEvents.Count > 0)
+            {
+                CreateXlxsFile(SiaExitSection.MoreEventsMorePartitions, siaMultipleEvents);
+                siaMultipleEvents.Clear();
+            }
+
+            if (siaNoSplitEvents.Count > 0)
+            {
+                CreateXlxsFile(SiaExitSection.NoSplit, siaNoSplitEvents);
+                siaNoSplitEvents.Clear();
+            }
         }
 
         static int WorkbookIndex = 1;
@@ -180,7 +198,7 @@ namespace M2M.SiaSplittingTestingTool
                 // #123456|Nri01/TA008*'Zone 8'NM/TA007*'Zone 7'NM/TA006*'Zone 6'NM|Nri01/TA005*'Zone 5'NM|Nri01/TA004*'Zone 4'NM
                 //string regexTmplExtended = "^#(?<accountno>[A-Z,0-9]{4,6})([|]N(?<partitions>(?<time>/?ti\\d{1,2}:\\d{1,2})?(?<group>/?ri\\w{1,2})?(?<user>/?id\\w{1,4})?(?<module>/?pi\\w{1,3})?(?<events>/?[A-Z]{2}(?:\\w{1,4})?)+(?<additional>([*]'[^|]*)*))+)+$";
                 //string regexTmplExtended = "^#(?<accountno>[A-Z,0-9]{4,6})([|]N(?<partitions>(?<time>/?ti\\d{1,2}:\\d{1,2})?(?<group>/?ri\\w{1,2})?(?<user>/?id\\w{1,4})?(?<module>/?pi\\w{1,3})?((?<events>/?[A-Z]{2}(?:\\w{1,4})?)(?<additional>([*]'[^/|]+)))+)+)+$";
-                string regexTmplExtended = "^#(?<accountno>[A-Z,0-9]{4,8})([|]N(?<partitions>(?<aisection>/?ai\\w{1,4})?(?<time>/?ti\\d{1,2}:\\d{1,2}(:\\d{1,2})?)?(?<group>/?ri\\w{1,4})?(?<user>/?id\\w{1,4})?(?<module>/?pi\\w{1,3})?((?<events>/?[A-Z]{2}(?:\\w{1,10})?)(?<additional>([*]'?[^/|]+)))+)+)+$";
+                string regexTmplExtended = "^#(?<accountno>[a-z,A-Z,0-9]{3,8})([|]N(?<partitions>(?<aisection>/?ai\\w{1,4})?(?<time>/?ti\\d{1,2}:\\d{1,2}(:\\d{1,2})?)?(?<group>/?ri\\w{1,4})?(?<user>/?id\\w{1,4})?(?<module>/?pi\\w{1,3})?((?<events>/?[A-Z]{2}(?:\\w{1,10})?)(?<additional>([*]'?[^/|]+)))+)+)+$";
 
 
                 Regex regexExtended = new Regex(regexTmplExtended);
@@ -336,18 +354,35 @@ namespace M2M.SiaSplittingTestingTool
                 }
                 else
                 {
+                    // |Nri006/BR319AI=Hrsk 5.H Inngangur|Nri006/BA319DI=Hrsk 5.H Svaedi 1
+                    // !!!should be
+                    // |Nri006/BR319A|AI=Hrsk 5.H Inngangur|Nri006/BA319D|AI=Hrsk 5.H Svaedi 1
+
+                    // #9322|Nri020/TA003D|AA=24t kerfissvaedi I=T02 Cabinet
+
+                    // |Nai9/CA002A=Heildsala U=.User 65529|Nri001/OP0998A=Lyfjaver U=Eva Mara r~ir|Nri001/BR000BI=Dyrlaesing skrifstofa 1h
+                    // Should be!!!!
+                    // |Nai9/CA002|AA=Heildsala U=.User 65529|Nri001/OP0998|AA=Lyfjaver U=Eva Mara r~ir|Nri001/BR000B|AI=Dyrlaesing skrifstofa 1h
+
+                    // |Nri003/OP0597U=Kort 10196
+                    // Should be!!!
+                    // |Nri003/OP0597|AU=Kort 10196
                     message = AppendMissingAdditionalSectionHeader(message, "Xmit");
                     message = AppendMissingAdditionalSectionHeader(message, "A=");
-                    message = AppendMissingAdditionalSectionHeader(message, "BI=");
-                    message = AppendMissingAdditionalSectionHeader(message, "AI=");
-                    message = AppendMissingAdditionalSectionHeader(message, "DI=");
+                    message = AppendMissingAdditionalSectionHeader(message, "U=");
+                    message = AppendMissingAdditionalSectionHeader(message, "I=");
+                    //message = AppendMissingAdditionalSectionHeader(message, "BI=");
+                    //message = AppendMissingAdditionalSectionHeader(message, "AI=");
+                    //message = AppendMissingAdditionalSectionHeader(message, "DI=");
 
                     // #0000|NTT10IA|A B0 Z10 Zone 10|NIA|A B0
                     // #0000|NTR10|A B0 Z10 Zone 10|NTR600|A B0 Panel Lid
                     // #1234|Nri10/YT100|ABattery Fault ;|A    |Nri10/LX000|AEngineer Exit ;Area A |Nri10/OR254|AAlarm Silenced ;Input Switched Area A |Nri10/CF254|AForced Set ;Input Switched Area A 
                     //string regexTmpl = "^#(?<accountno>[A-Z,0-9]{4,6})([|]N(?<partitions>(?<time>/?ti\\d{1,2}:\\d{1,2}(:\\d{1,2})?)?(?<group>/?ri\\w{1,4})?(?<user>/?id\\w{1,4})?(?<module>/?pi\\w{1,3})?(?<events>/?[A-Z]{2}(?:\\w{1,10})?)+(?<additional>([|]A[^|]*)*))+)+$";
 
-                    string regexTmpl = "^#(?<accountno>[A-Z,0-9]{4,8})([|]N(?<partitions>(?<aisection>/?ai\\w{1,4})?(?<time>/?ti\\d{1,2}:\\d{1,2}(:\\d{1,2})?)?(?<group>/?ri\\w{1,4})?(?<user>/?id\\w{1,4})?(?<module>/?pi\\w{1,3})?(?<events>/?[A-Z]{2}(?:\\w{1,10})?)+(?<additional>(?:\\^[^\\^]+\\^|[|/]A[^|]*)*))+)+$";
+                    //string regexTmpl = "^#(?<accountno>[A-Z,0-9]{4,8})([|]N(?<partitions>(?<aisection>/?ai\\w{1,4})?(?<time>/?ti\\d{1,2}:\\d{1,2}(:\\d{1,2})?)?(?<group>/?ri\\w{1,4})?(?<user>/?id\\w{1,4})?(?<module>/?pi\\w{1,3})?(?<events>/?[A-Z]{2}(?:\\w{1,10})?)+(?<additional>(?:\\^[^\\^]+\\^|[|/]A[^|]*)*))+)+$";
+
+                    string regexTmpl = "^#(?<accountno>[a-z,A-Z,0-9]{3,8})([|]N(?<partitions>(?<aisection>/?ai\\w{1,4})?(?<time>/?ti\\d{1,2}:\\d{1,2}(:\\d{1,2})?)?(?<group>/?ri\\w{1,4})?(?<user>/?id\\w{1,4})?(?<module>/?pi\\w{1,3})?(?<events>/?[A-Z]{2}(?:\\w{1,10})?)+(?<additional>(|[|/]A[^|]*)*))+)+$";
 
                     Regex regex = new Regex(regexTmpl);
                     Match match = regex.Match(message);
@@ -538,7 +573,7 @@ namespace M2M.SiaSplittingTestingTool
                     // We ADD: #1234|NCG1*'B1 Block 1'NM  AND  #1234|NCL1*'B0 U01 gosho'NM
                     else
                     {
-                        regexTmpl = "^(?<accountno>#[A-Z,0-9]{4,8})(?<events>[|]N(/?ti\\d{1,2}:\\d{1,2})?(/?ri\\w{1,2})?(/?id\\w{1,4})?(/?pi\\w{1,3})?/?[A-Z]{2}(?:\\w{0,4})?(?:[*]'[^']+'NM)?)+$";
+                        regexTmpl = "^(?<accountno>#[a-z,A-Z,0-9]{3,8})(?<events>[|]N(/?ti\\d{1,2}:\\d{1,2})?(/?ri\\w{1,2})?(/?id\\w{1,4})?(/?pi\\w{1,3})?/?[A-Z]{2}(?:\\w{0,4})?(?:[*]'[^']+'NM)?)+$";
 
                         Regex regex1 = new Regex(regexTmpl);
                         Match match1 = regex1.Match(message);
@@ -637,8 +672,17 @@ namespace M2M.SiaSplittingTestingTool
 
                 message = Regex.Replace(message, patternRegex, matchReg =>
                 {
+                    // We have white space at index 1 fo "U=", so we do nothing
+                    // |Nai9/CA002A=Heildsala U=.User 65529
+
+                    // We do not have white space before "A=", so we will try to normalize
+                    // |Nri001/OP0998A=Lyfjaver U=Eva Mara r~ir
+                    if (matchReg.Value[1] == ' ')
+                    {
+                        return matchReg.Value;
+                    }
                     // |AXmit
-                    if (matchReg.Value[0] == '|' && matchReg.Value[1] == 'A')
+                    else if (matchReg.Value[0] == '|' && matchReg.Value[1] == 'A')
                     {
                         return matchReg.Value; // exactly matching the pattern with |A in front of it
                     }
@@ -647,6 +691,11 @@ namespace M2M.SiaSplittingTestingTool
                     {
                         return matchReg.Value[0].ToString() + "|A" + pattern; // Add "|" before "AXmit"
                     }
+                    // #9030|NYC|A=== ? === RS485 - in this message, we should recognize the |A pattern, not the A= pattern
+                    else if (matchReg.Value[1] == '|' && matchReg.Value[2] == 'A' && matchReg.Value[3] == '=')
+                    {
+                        return matchReg.Value;
+                    } 
                     // ??Xmit
                     else if (matchReg.Value[0] != '|' && matchReg.Value[1] != 'A')
                     {
