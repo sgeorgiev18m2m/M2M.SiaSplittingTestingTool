@@ -198,8 +198,12 @@ namespace M2M.SiaSplittingTestingTool
                 // #123456|Nri01/TA008*'Zone 8'NM/TA007*'Zone 7'NM/TA006*'Zone 6'NM|Nri01/TA005*'Zone 5'NM|Nri01/TA004*'Zone 4'NM
                 //string regexTmplExtended = "^#(?<accountno>[A-Z,0-9]{4,6})([|]N(?<partitions>(?<time>/?ti\\d{1,2}:\\d{1,2})?(?<group>/?ri\\w{1,2})?(?<user>/?id\\w{1,4})?(?<module>/?pi\\w{1,3})?(?<events>/?[A-Z]{2}(?:\\w{1,4})?)+(?<additional>([*]'[^|]*)*))+)+$";
                 //string regexTmplExtended = "^#(?<accountno>[A-Z,0-9]{4,6})([|]N(?<partitions>(?<time>/?ti\\d{1,2}:\\d{1,2})?(?<group>/?ri\\w{1,2})?(?<user>/?id\\w{1,4})?(?<module>/?pi\\w{1,3})?((?<events>/?[A-Z]{2}(?:\\w{1,4})?)(?<additional>([*]'[^/|]+)))+)+)+$";
-                string regexTmplExtended = "^#(?<accountno>[a-z,A-Z,0-9]{3,8})([|]N(?<partitions>(?<aisection>/?ai\\w{1,4})?(?<time>/?ti\\d{1,2}:\\d{1,2}(:\\d{1,2})?)?(?<group>/?ri\\w{1,4})?(?<user>/?id\\w{1,4})?(?<module>/?pi\\w{1,3})?((?<events>/?[A-Z]{2}(?:\\w{1,10})?)(?<additional>([*]'?[^/|]+)))+)+)+$";
 
+                //string regexTmplExtended = "^#(?<accountno>[a-z,A-Z,0-9]{3,8})([|]N(?<partitions>(?<aisection>/?ai\\w{1,4})?(?<time>/?ti\\d{1,2}:\\d{1,2}(:\\d{1,2})?)?(?<group>/?ri\\w{1,4})?(?<user>/?id\\w{1,4})?(?<module>/?pi\\w{1,3})?((?<events>/?[A-Z]{2}(?:\\w{1,10})?)(?<additional>([*]'?[^/|]+)))+)+)+$";
+
+                //string regexTmplExtended = "^#(?<accountno>[a-z,A-Z,0-9]{3,8})([|]N(?<partitions>(?<aisection>/?ai\\w{1,4})?(?<time>/?ti\\d{1,2}:\\d{1,2}(:\\d{1,2})?)?(?<group>/?ri\\w{1,4})?(?<user>/?id\\w{1,4})?(?<module>/?pi\\w{1,3})?((?<events>/?[A-Z]{2}(?:\\w{1,10})?)(?<additional>(\\^[^\\\\^]+\\^)|([*]'?[^/|]+)))+)+)+$";
+
+                string regexTmplExtended = @"^#(?<accountno>[a-z,A-Z,0-9]{3,8})([|]N(?<partitions>(?<aisection>(/?ai\\w{1,4})(?<aiLabel>(\\^[^\\\\^]*\\^)|([*]'?[^/|]+))*)?(?<time>/?ti\\d{1,2}:\\d{1,2}(:\\d{1,2})?)?(?<group>(/?ri\\w{1,4})(?<groupLabel>(\\^[^\\\\^]*\\^)|([*]'?[^/|]+))*)?(?<user>(/?id\\w{1,4})(?<userLabel>(\\^[^\\\\^]*\\^)|([*]'?[^/|]+))*)?(?<module>(/?pi\\w{1,3})(?<moduleLabel>(\\^[^\\\\^]*\\^)|([*]'?[^/|]+))*)?(?<events>/?[A-Z]{2}(?:\\w{1,10})?)+(?<label>(\\^[^\\\\^]*\\^)|([*]'?[^/|]+))*)+)+$";
 
                 Regex regexExtended = new Regex(regexTmplExtended);
                 Match matchExtended = regexExtended.Match(message);
@@ -267,8 +271,8 @@ namespace M2M.SiaSplittingTestingTool
 
                         for (int p = 0; p < matchExtended.Groups["partitions"].Captures.Count; p++)
                         {
-                            //var regexTmpl1 = "^(?<time>/?ti\\d{1,2}:\\d{1,2})?(?<group>/?ri\\w{1,2})?(?<user>/?id\\w{1,3})?(?<module>/?pi\\w{1,3})?((?<events>/[A-Z]{2}(?:\\w{1,4})?)(?<additional>([*]'[^/]+)))+$";
-                            var regexTmpl1 = "^(?<time>/?ti\\d{1,2}:\\d{1,2})?(?<group>/?ri\\w{1,2})?(?<user>/?id\\w{1,4})?(?<module>/?pi\\w{1,3})?((?<events>/[A-Z]{2}(?:\\w{1,10})?)(?<additional>([*]'[^/]+)))+$";
+                            //var regexTmpl1 = "^(?<time>/?ti\\d{1,2}:\\d{1,2})?(?<group>/?ri\\w{1,2})?(?<user>/?id\\w{1,4})?(?<module>/?pi\\w{1,3})?((?<events>/[A-Z]{2}(?:\\w{1,10})?)(?<additional>([*]'[^/]+)))+$";
+                            var regexTmpl1 = "^(?<time>/?ti\\d{1,2}:\\d{1,2}(:\\d{1,2})?)?(?<group>/?ri\\w{1,4})?(?<user>/?id\\w{1,4})?(?<module>/?pi\\w{1,3})?((?<events>/?[A-Z]{2}(?:\\w{1,10})?)(?<additional>(\\^[^\\\\^]+\\^)|([*]'?[^/|]+)))+$";
 
                             Regex regex1 = new Regex(regexTmpl1);
                             Match match1 = regex1.Match(matchExtended.Groups["partitions"].Captures[p].Value);
@@ -382,7 +386,7 @@ namespace M2M.SiaSplittingTestingTool
 
                     //string regexTmpl = "^#(?<accountno>[A-Z,0-9]{4,8})([|]N(?<partitions>(?<aisection>/?ai\\w{1,4})?(?<time>/?ti\\d{1,2}:\\d{1,2}(:\\d{1,2})?)?(?<group>/?ri\\w{1,4})?(?<user>/?id\\w{1,4})?(?<module>/?pi\\w{1,3})?(?<events>/?[A-Z]{2}(?:\\w{1,10})?)+(?<additional>(?:\\^[^\\^]+\\^|[|/]A[^|]*)*))+)+$";
 
-                    string regexTmpl = "^#(?<accountno>[a-z,A-Z,0-9]{3,8})([|]N(?<partitions>(?<aisection>/?ai\\w{1,4})?(?<time>/?ti\\d{1,2}:\\d{1,2}(:\\d{1,2})?)?(?<group>/?ri\\w{1,4})?(?<user>/?id\\w{1,4})?(?<module>/?pi\\w{1,3})?(?<events>/?[A-Z]{2}(?:\\w{1,10})?)+(?<additional>(|[|/]A[^|]*)*))+)+$";
+                    string regexTmpl = "^#(?<accountno>[a-z,A-Z,0-9]{3,8})([|]N(?<partitions>(?<aisection>/?ai\\w{1,4})?(?<time>/?ti\\d{1,2}:\\d{1,2}(:\\d{1,2})?)?(?<group>/?ri\\w{1,4})?(?<user>/?id\\w{1,4})?(?<module>/?pi\\w{1,3})?(?<events>/?[A-Z]{2}(?:\\w{1,10})?)+(?<additional>([|/]A[^|]*)*))+)+$";
 
                     Regex regex = new Regex(regexTmpl);
                     Match match = regex.Match(message);
