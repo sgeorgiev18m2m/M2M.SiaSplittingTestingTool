@@ -272,7 +272,9 @@ namespace M2M.SiaSplittingTestingTool
                         for (int p = 0; p < matchExtended.Groups["partitions"].Captures.Count; p++)
                         {
                             //var regexTmpl1 = "^(?<time>/?ti\\d{1,2}:\\d{1,2})?(?<group>/?ri\\w{1,2})?(?<user>/?id\\w{1,4})?(?<module>/?pi\\w{1,3})?((?<events>/[A-Z]{2}(?:\\w{1,10})?)(?<additional>([*]'[^/]+)))+$";
-                            var regexTmpl1 = "^(?<time>/?ti\\d{1,2}:\\d{1,2}(:\\d{1,2})?)?(?<group>/?ri\\w{1,4})?(?<user>/?id\\w{1,4})?(?<module>/?pi\\w{1,3})?((?<events>/?[A-Z]{2}(?:\\w{1,10})?)(?<additional>(\\^[^\\\\^]+\\^)|([*]'?[^/|]+)))+$";
+                            //var regexTmpl1 = "^(?<time>/?ti\\d{1,2}:\\d{1,2}(:\\d{1,2})?)?(?<group>/?ri\\w{1,4})?(?<user>/?id\\w{1,4})?(?<module>/?pi\\w{1,3})?((?<events>/?[A-Z]{2}(?:\\w{1,10})?)(?<additional>(\\^[^\\\\^]+\\^)|([*]'?[^/|]+)))+$";
+
+                            string regexTmpl1 = @"(?<aisection>(/?ai\w{1,4})(?<aiLabel>(\^[^\\^]*\^)|([*]'?[^/|]+))*)?(?<time>/?ti\d{1,2}:\d{1,2}(:\d{1,2})?)?(?<group>(/?ri\w{1,4})(?<groupLabel>(\^[^\\^]*\^)|([*]'?[^/|]+))*)?(?<user>(/?id\w{1,4})(?<userLabel>(\^[^\\^]*\^)|([*]'?[^/|]+))*)?(?<module>(/?pi\w{1,3})(?<moduleLabel>(\^[^\\^]*\^)|([*]'?[^/|]+))*)?(?<events>/?[A-Z]{2}(?:\w{1,10})?)+(?<label>(\^[^\\^]*\^)|([*]'?[^/|]+))*";
 
                             Regex regex1 = new Regex(regexTmpl1);
                             Match match1 = regex1.Match(matchExtended.Groups["partitions"].Captures[p].Value);
