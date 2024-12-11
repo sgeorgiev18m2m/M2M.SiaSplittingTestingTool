@@ -388,7 +388,7 @@ namespace M2M.SiaSplittingTestingTool
 
                     //string regexTmpl = "^#(?<accountno>[A-Z,0-9]{4,8})([|]N(?<partitions>(?<aisection>/?ai\\w{1,4})?(?<time>/?ti\\d{1,2}:\\d{1,2}(:\\d{1,2})?)?(?<group>/?ri\\w{1,4})?(?<user>/?id\\w{1,4})?(?<module>/?pi\\w{1,3})?(?<events>/?[A-Z]{2}(?:\\w{1,10})?)+(?<additional>(?:\\^[^\\^]+\\^|[|/]A[^|]*)*))+)+$";
 
-                    string regexTmpl = "^#(?<accountno>[a-z,A-Z,0-9]{3,8})([|]N(?<partitions>(?<aisection>/?ai\\w{1,4})?(?<time>/?ti\\d{1,2}:\\d{1,2}(:\\d{1,2})?)?(?<group>/?ri\\w{1,4})?(?<user>/?id\\w{1,4})?(?<module>/?pi\\w{1,3})?(?<events>/?[A-Z]{2}(?:\\w{1,10})?)+(?<additional>([|/]A[^|]*)*))+)+$";
+                    string regexTmpl = @"^#(?<accountno>[A-Z,0-9]{4,6})([|]N(?<partitions>(?<aisection>/?ai\w{1,4})?(?<time>/?ti\d{1,2}:\d{1,2}(:\d{1,2})?)?(?<group>/?ri\w{1,4})?(?<user>/?id\w{1,4})?(?<module>/?pi\w{1,3})?(?<events>/?[A-Z]{2}(?:\w{1,10})?)+(?<additional>([|/]A[^|]*)*))+)+$";
 
                     Regex regex = new Regex(regexTmpl);
                     Match match = regex.Match(message);
@@ -460,7 +460,9 @@ namespace M2M.SiaSplittingTestingTool
                             {
                                 //regexTmpl = "^(?<time>/?ti\\d{1,2}:\\d{1,2})?(?<group>/?ri\\w{1,2})?(?<user>/?id\\w{1,4})?(?<module>/?pi\\w{1,3})?(?<events>/?[A-Z]{2}(?:\\w{1,4})?)+(?<additional>([|]A[^|]*)*)$";
 
-                                regexTmpl = "^(?<time>/?ti\\d{1,2}:\\d{1,2})?(?<group>/?ri\\w{1,2})?(?<user>/?id\\w{1,4})?(?<module>/?pi\\w{1,3})?(?<events>/?[A-Z]{2}(?:\\w{1,10})?)+(?<additional>([|/]A[^|]*)*)$";
+                                //regexTmpl = @"^(?<time>/?ti\\d{1,2}:\\d{1,2})?(?<group>/?ri\\w{1,2})?(?<user>/?id\\w{1,4})?(?<module>/?pi\\w{1,3})?(?<events>/?[A-Z]{2}(?:\\w{1,10})?)+(?<additional>([|/]A[^|]*)*)$";
+
+                                regexTmpl = @"(?<aisection>/?ai\w{1,4})?(?<time>/?ti\d{1,2}:\d{1,2}(:\d{1,2})?)?(?<group>/?ri\w{1,4})?(?<user>/?id\w{1,4})?(?<module>/?pi\w{1,3})?(?<events>/?[A-Z]{2}(?:\w{1,10})?)+(?<additional>([|/]A[^|]*)*)";
 
                                 Regex regex1 = new Regex(regexTmpl);
                                 Match match1 = regex1.Match(match.Groups["partitions"].Captures[p].Value);
@@ -579,7 +581,7 @@ namespace M2M.SiaSplittingTestingTool
                     // We ADD: #1234|NCG1*'B1 Block 1'NM  AND  #1234|NCL1*'B0 U01 gosho'NM
                     else
                     {
-                        regexTmpl = "^(?<accountno>#[a-z,A-Z,0-9]{3,8})(?<events>[|]N(/?ti\\d{1,2}:\\d{1,2})?(/?ri\\w{1,2})?(/?id\\w{1,4})?(/?pi\\w{1,3})?/?[A-Z]{2}(?:\\w{0,4})?(?:[*]'[^']+'NM)?)+$";
+                        regexTmpl = @"^#(?<accountno>[a-z,A-Z,0-9]{3,8})([|]N(?<partitions>(/?ti\d{1,2}:\d{1,2}(:\d{1,2})?)?(?<group>/?ri\w{1,4})?(?<user>/?id\w{1,4})?(?<module>/?pi\w{1,3})?(?<events>/?[A-Z]{2}(?:\w{1,10})?)+(?<additional>[*]'[^']+'NM)?)+)+$";
 
                         Regex regex1 = new Regex(regexTmpl);
                         Match match1 = regex1.Match(message);
