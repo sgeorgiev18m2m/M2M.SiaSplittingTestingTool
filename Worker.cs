@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using System.Text.RegularExpressions;
 using System.Text;
 using DocumentFormat.OpenXml.Spreadsheet;
+using System.Reflection.Metadata;
 
 namespace M2M.SiaSplittingTestingTool
 {
@@ -168,6 +169,20 @@ namespace M2M.SiaSplittingTestingTool
             InvalidSia = 6,
             NoSplit = 7
         }
+
+        const string accountNoRegex = @"#(?<accountno>[a-zA-Z0-9]{1,8})";
+        const string labelRegex = @"(\^[^\\^]*\^)|([*]'?[^/|]+)";
+        const string aiRegex = @"(?<aisection>(/?ai\w{1,4})(?<aiLabel>" + labelRegex + @")*)?";
+        const string dateTimeRegex = @"(?<date>/?da\d{1,2}-\d{1,2}-\d{1,2})?(?<time>/?ti\d{1,2}:\d{1,2}(:\d{1,2})?)?";
+        const string groupRegex = @"(?<group>(/?ri\w{1,4})(?<groupLabel>" + labelRegex + @")*)?";
+        const string userRegex = @"(?<user>(/?id\w{1,4})(?<userLabel>" + labelRegex + @")*)?";
+        const string moduleRegex = @"(?<module>(/?pi\w{1,4})(?<moduleLabel>" + labelRegex + @")*)?";
+        const string eventsRegex = @"(?<events>/?[A-Z]{2}(?:\w{1,10})?(?<label>" + labelRegex + @")*)+";
+
+        //const string additionalRegex = @"(?<additional>([|/]A[^|]*)*)";
+        const string additionalRegex = @"(?<additional>(([|/]A[^|]*)|([*]'[^']+'NM))*)";
+        //const string additional2Regex = @"(?<additional>[*]'[^']+'NM)?";
+
         void SplitSIAEvents(SiaEvent siaEvent, out List<string> splitEvents, out SiaExitSection exitSection)
         {
             string message = siaEvent.Event;
@@ -202,8 +217,9 @@ namespace M2M.SiaSplittingTestingTool
                 //string regexTmplExtended = "^#(?<accountno>[a-z,A-Z,0-9]{3,8})([|]N(?<partitions>(?<aisection>/?ai\\w{1,4})?(?<time>/?ti\\d{1,2}:\\d{1,2}(:\\d{1,2})?)?(?<group>/?ri\\w{1,4})?(?<user>/?id\\w{1,4})?(?<module>/?pi\\w{1,3})?((?<events>/?[A-Z]{2}(?:\\w{1,10})?)(?<additional>([*]'?[^/|]+)))+)+)+$";
 
                 //string regexTmplExtended = "^#(?<accountno>[a-z,A-Z,0-9]{3,8})([|]N(?<partitions>(?<aisection>/?ai\\w{1,4})?(?<time>/?ti\\d{1,2}:\\d{1,2}(:\\d{1,2})?)?(?<group>/?ri\\w{1,4})?(?<user>/?id\\w{1,4})?(?<module>/?pi\\w{1,3})?((?<events>/?[A-Z]{2}(?:\\w{1,10})?)(?<additional>(\\^[^\\\\^]+\\^)|([*]'?[^/|]+)))+)+)+$";
+                string partitionSectionRegex = aiRegex + dateTimeRegex + groupRegex + userRegex + moduleRegex + eventsRegex;
 
-                string regexTmplExtended = @"^#(?<accountno>[a-z,A-Z,0-9]{3,8})([|]N(?<partitions>(?<aisection>(/?ai\w{1,4})(?<aiLabel>(\^[^\\^]*\^)|([*]'?[^/|]+))*)?(?<time>/?ti\d{1,2}:\d{1,2}(:\d{1,2})?)?(?<group>(/?ri\w{1,4})(?<groupLabel>(\^[^\\^]*\^)|([*]'?[^/|]+))*)?(?<user>(/?id\w{1,4})(?<userLabel>(\^[^\\^]*\^)|([*]'?[^/|]+))*)?(?<module>(/?pi\w{1,3})(?<moduleLabel>(\^[^\\^]*\^)|([*]'?[^/|]+))*)?(?<events>/?[A-Z]{2}(?:\w{1,10})?)+(?<label>(\^[^\\^]*\^)|([*]'?[^/|]+))*)+)+$";
+                string regexTmplExtended = @"^" + accountNoRegex + @"([|]N(?<partitions>" + partitionSectionRegex + @")+)+$";
 
                 Regex regexExtended = new Regex(regexTmplExtended);
                 Match matchExtended = regexExtended.Match(message);
@@ -217,52 +233,20 @@ namespace M2M.SiaSplittingTestingTool
                     {
                         exitSection = SiaExitSection.MoreEventsOnePartition;
 
-                        StringBuilder sbLog = new StringBuilder();
-
-                        sbLog.Append("#");
-                        sbLog.Append(matchExtended.Groups["accountno"].Value);
-                        sbLog.Append("|N");
-
-                        if (matchExtended.Groups["time"].Success)
-                        {
-                            sbLog.Append(matchExtended.Groups["time"].Value);
-                        }
-
-                        if (matchExtended.Groups["group"].Success)
-                        {
-                            sbLog.Append(matchExtended.Groups["group"].Value);
-                        }
-
-                        if (matchExtended.Groups["user"].Success)
-                        {
-                            sbLog.Append(matchExtended.Groups["user"].Value);
-                        }
-
-                        if (matchExtended.Groups["module"].Success)
-                        {
-                            sbLog.Append(matchExtended.Groups["module"].Value);
-                        }
+                        string eventPrefix = GenerateEventPrefix(matchExtended, matchExtended);
 
                         for (int i = 0; i < matchExtended.Groups["events"].Captures.Count; i++)
                         {
-                            StringBuilder sbLogEvent = new StringBuilder();
+                            string eventCapture = matchExtended.Groups["events"].Captures[i].Value;
 
-                            sbLogEvent.Append(sbLog);
-
-                            sbLogEvent.Append(matchExtended.Groups["events"].Captures[i].Value);
-
+                            string? additionalCapture = null;
                             if (matchExtended.Groups["additional"].Success)
                             {
-                                string additional = matchExtended.Groups["additional"].Captures[i].Value;
-                                if (additional.Contains("|A"))
-                                {
-                                    additional = additional.Replace("|A", "");
-                                    sbLogEvent.Append("|A");
-                                }
-                                sbLogEvent.Append(additional.TrimEnd());
+                                additionalCapture = matchExtended.Groups["additional"].Captures[i].Value;
                             }
 
-                            splitEvents.Add(sbLogEvent.ToString());
+                            string splitEvent = GenerateEvent(eventPrefix, eventCapture, additionalCapture);
+                            splitEvents.Add(splitEvent);
                         }
                     }
                     else
@@ -272,75 +256,27 @@ namespace M2M.SiaSplittingTestingTool
                         for (int p = 0; p < matchExtended.Groups["partitions"].Captures.Count; p++)
                         {
                             //var regexTmpl1 = "^(?<time>/?ti\\d{1,2}:\\d{1,2})?(?<group>/?ri\\w{1,2})?(?<user>/?id\\w{1,4})?(?<module>/?pi\\w{1,3})?((?<events>/[A-Z]{2}(?:\\w{1,10})?)(?<additional>([*]'[^/]+)))+$";
-                            //var regexTmpl1 = "^(?<time>/?ti\\d{1,2}:\\d{1,2}(:\\d{1,2})?)?(?<group>/?ri\\w{1,4})?(?<user>/?id\\w{1,4})?(?<module>/?pi\\w{1,3})?((?<events>/?[A-Z]{2}(?:\\w{1,10})?)(?<additional>(\\^[^\\\\^]+\\^)|([*]'?[^/|]+)))+$";
+                            //var regexTmpl1 = "^(?<time>/?ti\\d{1,2}:\\d{1,2}(:\\d{1,2})?)?(?<group>/?ri\\w{1,4})?(?<user>/?id\\w{1,4})?(?<module>/?pi\\w{1,3})?((?<events>/?[A-Z]{2}(?:\\w{1,10})?)(?<additional>(\\^[^\\\\^]+\\^)|([*]'?[^/|]+)))+$";                             
 
-                            string regexTmpl1 = @"(?<aisection>(/?ai\w{1,4})(?<aiLabel>(\^[^\\^]*\^)|([*]'?[^/|]+))*)?(?<time>/?ti\d{1,2}:\d{1,2}(:\d{1,2})?)?(?<group>(/?ri\w{1,4})(?<groupLabel>(\^[^\\^]*\^)|([*]'?[^/|]+))*)?(?<user>(/?id\w{1,4})(?<userLabel>(\^[^\\^]*\^)|([*]'?[^/|]+))*)?(?<module>(/?pi\w{1,3})(?<moduleLabel>(\^[^\\^]*\^)|([*]'?[^/|]+))*)?(?<events>/?[A-Z]{2}(?:\w{1,10})?)+(?<label>(\^[^\\^]*\^)|([*]'?[^/|]+))*";
-
-                            Regex regex1 = new Regex(regexTmpl1);
+                            Regex regex1 = new Regex(partitionSectionRegex);
                             Match match1 = regex1.Match(matchExtended.Groups["partitions"].Captures[p].Value);
 
                             if (match1 != null && match1.Success && match1.Groups["events"].Success && match1.Groups["events"].Captures != null && match1.Groups["events"].Captures.Count > 1)
                             {
-                                StringBuilder sbLog = new StringBuilder();
-
-                                sbLog.Append("#");
-                                sbLog.Append(matchExtended.Groups["accountno"].Value);
-                                sbLog.Append("|N");
-
-                                bool firstPartitionElementAppended = false;
-
-                                if (match1.Groups["time"].Success)
-                                {
-                                    string time = firstPartitionElementAppended ? match1.Groups["time"].Value : RemoveLeadingSlash(match1.Groups["time"].Value);
-
-                                    sbLog.Append(time);
-                                    firstPartitionElementAppended = true;
-                                }
-
-                                if (match1.Groups["group"].Success)
-                                {
-                                    string group = firstPartitionElementAppended ? match1.Groups["group"].Value : RemoveLeadingSlash(match1.Groups["group"].Value);
-                                    sbLog.Append(group);
-                                    firstPartitionElementAppended = true;
-                                }
-
-                                if (match1.Groups["user"].Success)
-                                {
-                                    string user = firstPartitionElementAppended ? match1.Groups["user"].Value : RemoveLeadingSlash(match1.Groups["user"].Value);
-
-                                    sbLog.Append(user);
-
-                                    firstPartitionElementAppended = true;
-                                }
-
-                                if (match1.Groups["module"].Success)
-                                {
-                                    string module = firstPartitionElementAppended ? match1.Groups["module"].Value : RemoveLeadingSlash(match1.Groups["module"].Value);
-                                    sbLog.Append(module);
-
-                                    firstPartitionElementAppended = true;
-                                }
+                                string eventPrefix = GenerateEventPrefix(matchExtended, match1);
 
                                 for (int i = 0; i < match1.Groups["events"].Captures.Count; i++)
                                 {
-                                    StringBuilder sbLogEvent = new StringBuilder();
+                                    string eventCapture = match1.Groups["events"].Captures[i].Value;
 
-                                    sbLogEvent.Append(sbLog);
-
-                                    sbLogEvent.Append(match1.Groups["events"].Captures[i].Value);
-
+                                    string? additionalCapture = null;
                                     if (match1.Groups["additional"].Success)
                                     {
-                                        string additional = match1.Groups["additional"].Captures[i].Value;
-                                        if (additional.Contains("|A"))
-                                        {
-                                            additional = additional.Replace("|A", "");
-                                            sbLogEvent.Append("|A");
-                                        }
-                                        sbLogEvent.Append(additional.TrimEnd());
+                                        additionalCapture = match1.Groups["additional"].Value;
                                     }
 
-                                    splitEvents.Add(sbLogEvent.ToString());
+                                    string splitEvent = GenerateEvent(eventPrefix, eventCapture, additionalCapture);
+                                    splitEvents.Add(splitEvent);
                                 }
                             }
                             else
@@ -351,7 +287,7 @@ namespace M2M.SiaSplittingTestingTool
                                 sbLog.Append(matchExtended.Groups["accountno"].Value);
                                 sbLog.Append("|N");
 
-                                sbLog.Append(matchExtended.Groups["partitions"].Captures[p].Value);
+                                sbLog.Append(RemoveLeadingSlash(matchExtended.Groups["partitions"].Captures[p].Value));
 
                                 splitEvents.Add(sbLog.ToString());
                             }
@@ -388,7 +324,8 @@ namespace M2M.SiaSplittingTestingTool
 
                     //string regexTmpl = "^#(?<accountno>[A-Z,0-9]{4,8})([|]N(?<partitions>(?<aisection>/?ai\\w{1,4})?(?<time>/?ti\\d{1,2}:\\d{1,2}(:\\d{1,2})?)?(?<group>/?ri\\w{1,4})?(?<user>/?id\\w{1,4})?(?<module>/?pi\\w{1,3})?(?<events>/?[A-Z]{2}(?:\\w{1,10})?)+(?<additional>(?:\\^[^\\^]+\\^|[|/]A[^|]*)*))+)+$";
 
-                    string regexTmpl = @"^#(?<accountno>[A-Z,0-9]{4,6})([|]N(?<partitions>(?<aisection>/?ai\w{1,4})?(?<time>/?ti\d{1,2}:\d{1,2}(:\d{1,2})?)?(?<group>/?ri\w{1,4})?(?<user>/?id\w{1,4})?(?<module>/?pi\w{1,3})?(?<events>/?[A-Z]{2}(?:\w{1,10})?)+(?<additional>([|/]A[^|]*)*))+)+$";
+                    string partitionAndAdditionalSectionRegex = partitionSectionRegex + additionalRegex;
+                    string regexTmpl = @"^" + accountNoRegex + @"([|]N(?<partitions>" + partitionAndAdditionalSectionRegex + @")+)+$";
 
                     Regex regex = new Regex(regexTmpl);
                     Match match = regex.Match(message);
@@ -400,57 +337,21 @@ namespace M2M.SiaSplittingTestingTool
                         if (match.Groups["partitions"].Captures.Count == 1)
                         {
                             exitSection = SiaExitSection.MoreEventsSecondTryOnePartition;
-                            StringBuilder sbLog = new StringBuilder();
 
-                            sbLog.Append("#");
-                            sbLog.Append(match.Groups["accountno"].Value);
-                            sbLog.Append("|N");
-
-                            if (match.Groups["time"].Success)
-                            {
-                                sbLog.Append(match.Groups["time"].Value);
-                            }
-
-                            if (match.Groups["group"].Success)
-                            {
-                                sbLog.Append(match.Groups["group"].Value);
-                            }
-
-                            if (match.Groups["user"].Success)
-                            {
-                                sbLog.Append(match.Groups["user"].Value);
-                            }
-
-                            if (match.Groups["module"].Success)
-                            {
-                                sbLog.Append(match.Groups["module"].Value);
-                            }
-
+                            string eventPrefix = GenerateEventPrefix(match, match);
+                            
                             for (int i = 0; i < match.Groups["events"].Captures.Count; i++)
                             {
-                                StringBuilder sbLogEvent = new StringBuilder();
+                                string eventCapture = match.Groups["events"].Captures[i].Value;
 
-                                sbLogEvent.Append(sbLog);
-
-                                string eventToAppend = match.Groups["events"].Captures[i].Value;
-
-                                if (sbLog.ToString().EndsWith("|N"))
-                                    eventToAppend = RemoveLeadingSlash(eventToAppend);
-
-                                sbLogEvent.Append(eventToAppend);
-
+                                string? additionalCapture = null;
                                 if (match.Groups["additional"].Success)
                                 {
-                                    string additional = match.Groups["additional"].Value;
-                                    if (additional.Contains("|A"))
-                                    {
-                                        additional = additional.Replace("|A", "");
-                                        sbLogEvent.Append("|A");
-                                    }
-                                    sbLogEvent.Append(additional.TrimEnd());
+                                    additionalCapture = match.Groups["additional"].Value;
                                 }
 
-                                splitEvents.Add(sbLogEvent.ToString());
+                                string splitEvent = GenerateEvent(eventPrefix, eventCapture, additionalCapture);
+                                splitEvents.Add(splitEvent);
                             }
                         }
                         else
@@ -462,77 +363,25 @@ namespace M2M.SiaSplittingTestingTool
 
                                 //regexTmpl = @"^(?<time>/?ti\\d{1,2}:\\d{1,2})?(?<group>/?ri\\w{1,2})?(?<user>/?id\\w{1,4})?(?<module>/?pi\\w{1,3})?(?<events>/?[A-Z]{2}(?:\\w{1,10})?)+(?<additional>([|/]A[^|]*)*)$";
 
-                                regexTmpl = @"(?<aisection>/?ai\w{1,4})?(?<time>/?ti\d{1,2}:\d{1,2}(:\d{1,2})?)?(?<group>/?ri\w{1,4})?(?<user>/?id\w{1,4})?(?<module>/?pi\w{1,3})?(?<events>/?[A-Z]{2}(?:\w{1,10})?)+(?<additional>([|/]A[^|]*)*)";
-
-                                Regex regex1 = new Regex(regexTmpl);
+                                Regex regex1 = new Regex(partitionAndAdditionalSectionRegex);
                                 Match match1 = regex1.Match(match.Groups["partitions"].Captures[p].Value);
 
                                 if (match1 != null && match1.Success && match1.Groups["events"].Success && match1.Groups["events"].Captures != null && match1.Groups["events"].Captures.Count > 1)
                                 {
-                                    StringBuilder sbLog = new StringBuilder();
-
-                                    sbLog.Append("#");
-                                    sbLog.Append(match.Groups["accountno"].Value);
-                                    sbLog.Append("|N");
-
-                                    bool firstPartitionElementAppended = false;
-
-                                    if (match1.Groups["time"].Success)
-                                    {
-                                        string time = firstPartitionElementAppended ? match1.Groups["time"].Value : RemoveLeadingSlash(match1.Groups["time"].Value);
-
-                                        sbLog.Append(time);
-                                        firstPartitionElementAppended = true;
-                                    }
-
-                                    if (match1.Groups["group"].Success)
-                                    {
-                                        string group = firstPartitionElementAppended ? match1.Groups["group"].Value : RemoveLeadingSlash(match1.Groups["group"].Value);
-                                        sbLog.Append(group);
-                                        firstPartitionElementAppended = true;
-                                    }
-
-                                    if (match1.Groups["user"].Success)
-                                    {
-                                        string user = firstPartitionElementAppended ? match1.Groups["user"].Value : RemoveLeadingSlash(match1.Groups["user"].Value);
-
-                                        sbLog.Append(user);
-
-                                        firstPartitionElementAppended = true;
-                                    }
-
-                                    if (match1.Groups["module"].Success)
-                                    {
-                                        string module = firstPartitionElementAppended ? match1.Groups["module"].Value : RemoveLeadingSlash(match1.Groups["module"].Value);
-                                        sbLog.Append(module);
-                                        firstPartitionElementAppended = true;
-                                    }
+                                    string eventPrefix = GenerateEventPrefix(match, match1);
 
                                     for (int i = 0; i < match1.Groups["events"].Captures.Count; i++)
                                     {
-                                        StringBuilder sbLogEvent = new StringBuilder();
+                                        string eventCapture = match.Groups["events"].Captures[i].Value;
 
-                                        sbLogEvent.Append(sbLog);
-
-                                        string eventToAppend = match.Groups["events"].Captures[i].Value;
-
-                                        if (sbLog.ToString().EndsWith("|N"))
-                                            eventToAppend = RemoveLeadingSlash(eventToAppend);
-
-                                        sbLogEvent.Append(eventToAppend);
-
+                                        string? additionalCapture = null;
                                         if (match1.Groups["additional"].Success)
                                         {
-                                            string additional = match1.Groups["additional"].Value;
-                                            if (additional.Contains("|A"))
-                                            {
-                                                additional = additional.Replace("|A", "");
-                                                sbLogEvent.Append("|A");
-                                            }
-                                            sbLogEvent.Append(additional.TrimEnd());
+                                            additionalCapture = match1.Groups["additional"].Value;
                                         }
 
-                                        splitEvents.Add(sbLogEvent.ToString());
+                                        string splitEvent = GenerateEvent(eventPrefix, eventCapture, additionalCapture);
+                                        splitEvents.Add(splitEvent);
                                     }
                                 }
                                 else
@@ -544,7 +393,7 @@ namespace M2M.SiaSplittingTestingTool
                                     sbLog.Append("|N");
 
                                     //#1234|Nri10/YT100|ABattery Fault ;|ABatt
-                                    string partition = match.Groups["partitions"].Captures[p].Value;
+                                    string partition = RemoveLeadingSlash(match.Groups["partitions"].Captures[p].Value);
                                     int indexIdx = partition.IndexOf("|A");
                                     if (indexIdx != -1)
                                     {
@@ -581,7 +430,8 @@ namespace M2M.SiaSplittingTestingTool
                     // We ADD: #1234|NCG1*'B1 Block 1'NM  AND  #1234|NCL1*'B0 U01 gosho'NM
                     else
                     {
-                        regexTmpl = @"^#(?<accountno>[a-z,A-Z,0-9]{3,8})([|]N(?<partitions>(/?ti\d{1,2}:\d{1,2}(:\d{1,2})?)?(?<group>/?ri\w{1,4})?(?<user>/?id\w{1,4})?(?<module>/?pi\w{1,3})?(?<events>/?[A-Z]{2}(?:\w{1,10})?)+(?<additional>[*]'[^']+'NM)?)+)+$";
+                        // This is now the same as the previous match
+                        //regexTmpl = @"^" + accountNoRegex + @"([|]N(?<partitions>" + aiRegex + dateTimeRegex + groupRegex + userRegex + moduleRegex + eventsRegex + additionalRegex + @")+)+$";
 
                         Regex regex1 = new Regex(regexTmpl);
                         Match match1 = regex1.Match(message);
@@ -718,6 +568,75 @@ namespace M2M.SiaSplittingTestingTool
                 });
             }
             return message;
+        }
+        static string GenerateEventPrefix(Match match, Match match1)
+        {
+            StringBuilder sbLog = new StringBuilder();
+
+            sbLog.Append("#");
+            sbLog.Append(match.Groups["accountno"].Value);
+            sbLog.Append("|N");
+
+            bool firstPartitionElementAppended = false;
+
+            if (match1.Groups["time"].Success)
+            {
+                string time = firstPartitionElementAppended ? match1.Groups["time"].Value : RemoveLeadingSlash(match1.Groups["time"].Value);
+
+                sbLog.Append(time);
+                firstPartitionElementAppended = true;
+            }
+
+            if (match1.Groups["group"].Success)
+            {
+                string group = firstPartitionElementAppended ? match1.Groups["group"].Value : RemoveLeadingSlash(match1.Groups["group"].Value);
+                sbLog.Append(group);
+                firstPartitionElementAppended = true;
+            }
+
+            if (match1.Groups["user"].Success)
+            {
+                string user = firstPartitionElementAppended ? match1.Groups["user"].Value : RemoveLeadingSlash(match1.Groups["user"].Value);
+
+                sbLog.Append(user);
+
+                firstPartitionElementAppended = true;
+            }
+
+            if (match1.Groups["module"].Success)
+            {
+                string module = firstPartitionElementAppended ? match1.Groups["module"].Value : RemoveLeadingSlash(match1.Groups["module"].Value);
+                sbLog.Append(module);
+                firstPartitionElementAppended = true;
+            }
+
+            return sbLog.ToString();
+        }
+        static string GenerateEvent(string eventPrefix, string eventCapture, string? additionalCapture)
+        {
+            StringBuilder sbLogEvent = new StringBuilder();
+
+            sbLogEvent.Append(eventPrefix);
+
+            string eventToAppend = eventCapture;
+
+            if (eventPrefix.EndsWith("|N"))
+                eventToAppend = RemoveLeadingSlash(eventToAppend);
+
+            sbLogEvent.Append(eventToAppend);
+
+            if (additionalCapture != null)
+            {
+                string additional = additionalCapture;
+                if (additional.Contains("|A"))
+                {
+                    additional = additional.Replace("|A", "");
+                    sbLogEvent.Append("|A");
+                }
+                sbLogEvent.Append(additional.TrimEnd());
+            }
+
+            return sbLogEvent.ToString();
         }
     }
 }
