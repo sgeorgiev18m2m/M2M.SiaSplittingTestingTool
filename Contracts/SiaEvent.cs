@@ -26,5 +26,6 @@ namespace M2M.SiaSplittingTestingTool.Contracts
         public string Event { get; set; }
         public  List<string> SplitEvents { get; set; }
         public SiaExitSection ExitSection { get; set; }
+        public TimeSpan Duration { get; set; }
     }
 }

@@ -100,3 +100,14 @@
 #0635|Nri1/BA066^WEST WING MOT.^/CR000/BA050^PRIM WING MOT ^/BV000
 #0117|NBA006^Slaapkamer 1   ^|NBC501|NRP000|NBA005^Woonkamer      ^|NBA004^Hal            ^|NBA007^Overloop       ^
 #2244|NBA02^Conservatory   ^|NOP01|NBC01|NOR00
+#1572|NBV03*'B0 Z003 D/Stair Hall'NM|NBV07*'B0 Z007 Up/Stair Mid'NM|NBV08*'B0 Z008 Up/Stair B/K'NM|NBV34*'B0 Z034 Back Stair P'NM|NBV46*'B0 Z046 Landing PIR 'NM|NBR03*'B0 Z003 D/Stair Hall'NM|NBR07*'B0 Z007 Up/Stair Mid'NM|NBR08*'B0 Z008 Up/Stair B/K'N
+#1572|NBV03*'B0 Z003 D/Stair Hall'NM|NBV07*'B0 Z007 Up/Stair Mid'NM|NBV08*'B0 Z008 Up/Stair B/K'NM|NBV34*'B0 Z034 Back Stair P'NM|NBV46*'B0 Z046 Landing PIR 'NM|NBR03*'B0 Z003 D/Stair Hall'NM|NBR07*'B0 Z007 Up/Stair Mid'NM|NBR08*'B0 Z008 Up/Stair B/K'NM
+#178928|Nid1/ri1/CL
+#071781|Nti16:02/pi110/id003/DG|AValid             
+#001238|Nid2/ri1/OP
+#209060|NBR08*'Boiler wdw'NM/OR01*'Code 001'NM|NBR07*'Boiler wdw'NM/BR06*'Boiler wdw'NM|NBR05*'Boiler dr'NM/BR04*'Female toilt'NM|NBR03*'Male toilets'NM/BR47*'Upstrs toilt'NM|NBR45*'Wdw b/s stor'NM/BR43*'Ir b/stage'NM|NBR02*'Entry beam'NM
+#7609|NET0000/ET0000/FT0169/ET0000/FT0169/FT0169/ET0000/FT0169|NFT0169/ET0000/ER0000/ER0000/FJ0169/FJ0169/FJ0169/FJ0169|NER0000/ER0000/
+#209060|NBA08*'Boiler wdw'NM/BA07*'Boiler wdw'NM|NBA06*'Boiler wdw'NM/BA05*'Boiler dr'NM|NBA04*'Female toilt'NM/BA03*'Male toilets'NM|NBA47*'Upstrs toilt'NM/BA45*'Wdw b/s stor'NM|NBA43*'Ir b/stage'NM/BA42*'Ir entry b/s'NM
+#0097|NBA002*'PIR Hal Entree 'NM|NBR002*'PIR Hal Entree 'NM|NBR006*'Deur Opslag lood'NM|NBR013*'Kantine 'NM|NBR014*'PIR Opslag loods'NM|NBR016*'Roldeur Opslag l'NM|NOR0501 00003'NM
+#0073|NFH*001001|NFT*000000|NFJ*000000
+#3265|Nri1/UT022*Tamper # 3    */UJ022*Tamper # 3    *
