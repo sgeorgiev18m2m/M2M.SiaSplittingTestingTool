@@ -34,8 +34,8 @@ namespace M2M.SiaSplittingTestingTool
             {
                 foreach (SiaEvent siaEvent in sia)
                 {
-                    DateTime dateTimeNow = DateTime.UtcNow; 
-                    SplitSIAEvents(siaEvent, out List<string> splitEvents, out SiaExitSection exitSection);
+                    DateTime dateTimeNow = DateTime.UtcNow;
+                    List<string> splitEvents = SplitSIAEvents(siaEvent, out SiaSplitResult exitSection);
 
                     TimeSpan duration = DateTime.UtcNow - dateTimeNow;
 
@@ -44,11 +44,11 @@ namespace M2M.SiaSplittingTestingTool
                     siaEvent.SplitEvents = splitEvents;
                     siaEvent.ExitSection = exitSection;
 
-                    if (exitSection == SiaExitSection.OneEventCapture)
+                    if (exitSection == SiaSplitResult.OneEventCapture)
                     {
                         siaSingleEvent.Add(siaEvent);
                     }
-                    else if (exitSection == SiaExitSection.NoSplit)
+                    else if (exitSection == SiaSplitResult.NoSplit)
                     {
                         siaNoSplitEvents.Add(siaEvent);
                     }
@@ -59,19 +59,19 @@ namespace M2M.SiaSplittingTestingTool
 
                     if (duration > TimeSpan.FromMilliseconds(100))
                     {
-                        CreateXlxsFile(SiaExitSection.TimeOut, [siaEvent]);
+                        CreateXlxsFile(SiaSplitResult.TimeOut, [siaEvent]);
                     }
                 }
 
                 if (useFile)
                 {
-                    CreateXlxsFile(SiaExitSection.OneEventCapture, siaSingleEvent);
+                    CreateXlxsFile(SiaSplitResult.OneEventCapture, siaSingleEvent);
                     siaSingleEvent.Clear();
 
-                    CreateXlxsFile(SiaExitSection.MoreEventsMorePartitions, siaMultipleEvents);
+                    CreateXlxsFile(SiaSplitResult.MoreEventsMorePartitions, siaMultipleEvents);
                     siaMultipleEvents.Clear();
 
-                    CreateXlxsFile(SiaExitSection.NoSplit, siaNoSplitEvents);
+                    CreateXlxsFile(SiaSplitResult.NoSplit, siaNoSplitEvents);
                     siaNoSplitEvents.Clear();
 
                     break;
@@ -80,19 +80,19 @@ namespace M2M.SiaSplittingTestingTool
                 {
                     if (siaSingleEvent.Count > 300000)
                     {
-                        CreateXlxsFile(SiaExitSection.OneEventCapture, siaSingleEvent);
+                        CreateXlxsFile(SiaSplitResult.OneEventCapture, siaSingleEvent);
                         siaSingleEvent.Clear();
                     }
 
                     if (siaMultipleEvents.Count > 30000)
                     {
-                        CreateXlxsFile(SiaExitSection.MoreEventsMorePartitions, siaMultipleEvents);
+                        CreateXlxsFile(SiaSplitResult.MoreEventsMorePartitions, siaMultipleEvents);
                         siaMultipleEvents.Clear();
                     }
 
                     if (siaNoSplitEvents.Count > 100000)
                     {
-                        CreateXlxsFile(SiaExitSection.NoSplit, siaNoSplitEvents);
+                        CreateXlxsFile(SiaSplitResult.NoSplit, siaNoSplitEvents);
                         siaNoSplitEvents.Clear();
                     }
 
@@ -103,39 +103,39 @@ namespace M2M.SiaSplittingTestingTool
 
             if (siaSingleEvent.Count > 0)
             {
-                CreateXlxsFile(SiaExitSection.OneEventCapture, siaSingleEvent);
+                CreateXlxsFile(SiaSplitResult.OneEventCapture, siaSingleEvent);
                 siaSingleEvent.Clear();
             }
 
             if (siaMultipleEvents.Count > 0)
             {
-                CreateXlxsFile(SiaExitSection.MoreEventsMorePartitions, siaMultipleEvents);
+                CreateXlxsFile(SiaSplitResult.MoreEventsMorePartitions, siaMultipleEvents);
                 siaMultipleEvents.Clear();
             }
 
             if (siaNoSplitEvents.Count > 0)
             {
-                CreateXlxsFile(SiaExitSection.NoSplit, siaNoSplitEvents);
+                CreateXlxsFile(SiaSplitResult.NoSplit, siaNoSplitEvents);
                 siaNoSplitEvents.Clear();
             }
         }
 
         static int WorkbookIndex = 1;
-        void CreateXlxsFile(SiaExitSection eventType, List<SiaEvent> siaEvents)
+        void CreateXlxsFile(SiaSplitResult eventType, List<SiaEvent> siaEvents)
         {
             string fileNameBeginning = "Multiples";
 
-            if (eventType == SiaExitSection.OneEventCapture)
+            if (eventType == SiaSplitResult.OneEventCapture)
             {
                 fileNameBeginning = "Singles";
             }
 
-            if (eventType == SiaExitSection.NoSplit)
+            if (eventType == SiaSplitResult.NoSplit)
             {
                 fileNameBeginning = "NoSplit";
             }
 
-            if (eventType == SiaExitSection.TimeOut)
+            if (eventType == SiaSplitResult.TimeOut)
             {
                 fileNameBeginning = "TimeOut";
             }
@@ -177,10 +177,10 @@ namespace M2M.SiaSplittingTestingTool
             }
             WorkbookIndex++;
         }
-        public enum SiaExitSection
+        public enum SiaSplitResult
         {
             OneEventCapture = 0,
-            MoreEventsOnePartition= 1,
+            MoreEventsOnePartition = 1,
             MoreEventsMorePartitions = 2,
             MoreEventsSecondTryOnePartition = 3,
             MoreEventsSecondTryMorePartitions = 4,
@@ -189,30 +189,33 @@ namespace M2M.SiaSplittingTestingTool
             NoSplit = 7,
             TimeOut = 8
         }
-
-        const string accountNoRegex = @"#(?<accountno>[a-zA-Z0-9]{1,8})";
+        const string siaAccountNoRegex = "^#(?<accountno>[^|]*)[|]?";
+        const string accountNoRegex = @"#(?<accountno>[0-9a-zA-Z]{1,8})";
         const string labelRegex = @"(\^[^\\^]*\^)|([*]'?[^/|]+)";
-        const string aiRegex = @"(?<aisection>(/?ai\w{1,4})(?<aiLabel>" + labelRegex + @")*)?";
+        const string aiRegex = @"(?<aisection>(/?ai[0-9A-Fa-f]{1,4})(?<aiLabel>" + labelRegex + @")*)?";
         const string dateTimeRegex = @"(?<date>/?da\d{1,2}-\d{1,2}-\d{1,2})?(?<time>/?ti\d{1,2}:\d{1,2}(:\d{1,2})?)?";
-        const string groupRegex = @"(?<group>(/?ri\w{1,4})(?<groupLabel>" + labelRegex + @")*)?";
-        const string userRegex = @"(?<user>(/?id\w{1,4})(?<userLabel>" + labelRegex + @")*)?";
-        const string moduleRegex = @"(?<module>(/?pi\w{1,4})(?<moduleLabel>" + labelRegex + @")*)?";
+        const string groupRegex = @"(?<group>(/?ri[0-9A-Fa-f]{1,4})(?<groupLabel>" + labelRegex + @")*)?";
+        const string userRegex = @"(?<user>(/?id[0-9A-Fa-f]{1,4})(?<userLabel>" + labelRegex + @")*)?";
+        const string moduleRegex = @"(?<module>(/?pi[0-9A-Fa-f]{1,4})(?<moduleLabel>" + labelRegex + @")*)?";
         const string eventLabelRegex = @"(?<eventLabel>" + labelRegex + @"|([*]'[^']+'NM?)" + @")*";
-        const string eventsRegex = @"(?<events>" + @"(?<eventWithoutLabel>/?[A-Z]{2}(?:\w{1,10})?)" + eventLabelRegex + @")";
+        const string singleEventRegex = @"(?<events>" + @"(?<eventWithoutLabel>/?[A-Z]{2}(?:\w{1,10})?)" + eventLabelRegex + @")";
+        const string multipleEventsRegex = singleEventRegex + @"+";
 
-        //const string additionalRegex = @"(?<additional>([|/]A[^|]*)*)";
-        const string additionalRegex = @"(?<additional>(([|/]A[^|]*))*)";
-        //const string additional2Regex = @"(?<additional>[*]'[^']+'NM)?";
+        const string additionalRegex = @"(?<additional>([|/]A[^|]*)*)";
 
-        void SplitSIAEvents(SiaEvent siaEvent, out List<string> splitEvents, out SiaExitSection exitSection)
+        // /ri/id/pi sequence
+        const string partitionWithSingleEventRegex = aiRegex + dateTimeRegex + groupRegex + userRegex + moduleRegex + singleEventRegex;
+        // /pi/id/ri sequence
+        const string partitionWithSingleEventRegex2 = aiRegex + dateTimeRegex + moduleRegex + userRegex + groupRegex + singleEventRegex;
+
+        // /ri/id/pi sequence
+        const string partitionWithMultipleEventsRegex = aiRegex + dateTimeRegex + groupRegex + userRegex + moduleRegex + multipleEventsRegex;
+        // /pi/id/ri sequence
+        const string partitionWithMultipleEventsRegex2 = aiRegex + dateTimeRegex + moduleRegex + userRegex + groupRegex + multipleEventsRegex;
+        public static List<string> SplitSIAEvents(SiaEvent siaEvent, out SiaSplitResult exitSection)
         {
             string message = siaEvent.Event;
-
-            Console.WriteLine("Entering SplitSIAEvents for event " + message);
-
-            message = message.Trim();
-
-            splitEvents = new List<string>();
+            List<string> splitEvents = new List<string>();
 
             // Regex logic taken from the code that splits the SIA events in the Dashboard of the RControl Admin Portal
             // code to split a long SIA message into separate atomic SIA events
@@ -221,30 +224,34 @@ namespace M2M.SiaSplittingTestingTool
             {
                 // this is not a SIA message, don't modify it
                 splitEvents.Add(message);
-                exitSection = SiaExitSection.InvalidSia;
+
+                // When not a SIA message
+                exitSection = SiaSplitResult.InvalidSia;
             }
             else
             {
+                message = message.Trim();
+
                 //#0003|Nri1/OP40/YK00/Ori1/RX00/MA00/MH00/CL40
-                message = message.Replace("/Ori", "|Nri");
+                message = message.Replace("/Ori", "|Ori");
+                message = message.Replace("/Nri", "|Nri");
                 //#4875|NRP0|OFA4|OFT3
+                // TODO: in the future, we should keep both |O and |N
                 message = message.Replace("|O", "|N");
 
                 // #5585|NFA0210/FA0216/|NYR0000/FJ0030
                 message = message.Replace("/|N", "|N");
 
-                message = RemoveEndingSlash(message);
+                message = RemoveTrailingSlash(message);
+                message = RemoveTrailingNs(message);
 
                 // #123456|Nri01/TA008*'Zone 8'NM/TA007*'Zone 7'NM/TA006*'Zone 6'NM|Nri01/TA005*'Zone 5'NM|Nri01/TA004*'Zone 4'NM
                 //string regexTmplExtended = "^#(?<accountno>[A-Z,0-9]{4,6})([|]N(?<partitions>(?<time>/?ti\\d{1,2}:\\d{1,2})?(?<group>/?ri\\w{1,2})?(?<user>/?id\\w{1,4})?(?<module>/?pi\\w{1,3})?(?<events>/?[A-Z]{2}(?:\\w{1,4})?)+(?<additional>([*]'[^|]*)*))+)+$";
                 //string regexTmplExtended = "^#(?<accountno>[A-Z,0-9]{4,6})([|]N(?<partitions>(?<time>/?ti\\d{1,2}:\\d{1,2})?(?<group>/?ri\\w{1,2})?(?<user>/?id\\w{1,4})?(?<module>/?pi\\w{1,3})?((?<events>/?[A-Z]{2}(?:\\w{1,4})?)(?<additional>([*]'[^/|]+)))+)+)+$";
-
                 //string regexTmplExtended = "^#(?<accountno>[a-z,A-Z,0-9]{3,8})([|]N(?<partitions>(?<aisection>/?ai\\w{1,4})?(?<time>/?ti\\d{1,2}:\\d{1,2}(:\\d{1,2})?)?(?<group>/?ri\\w{1,4})?(?<user>/?id\\w{1,4})?(?<module>/?pi\\w{1,3})?((?<events>/?[A-Z]{2}(?:\\w{1,10})?)(?<additional>([*]'?[^/|]+)))+)+)+$";
-
                 //string regexTmplExtended = "^#(?<accountno>[a-z,A-Z,0-9]{3,8})([|]N(?<partitions>(?<aisection>/?ai\\w{1,4})?(?<time>/?ti\\d{1,2}:\\d{1,2}(:\\d{1,2})?)?(?<group>/?ri\\w{1,4})?(?<user>/?id\\w{1,4})?(?<module>/?pi\\w{1,3})?((?<events>/?[A-Z]{2}(?:\\w{1,10})?)(?<additional>(\\^[^\\\\^]+\\^)|([*]'?[^/|]+)))+)+)+$";
-                string partitionSectionRegex = aiRegex + dateTimeRegex + groupRegex + userRegex + moduleRegex + eventsRegex;
 
-                bool successSplit = SplitSIAEvents(message, partitionSectionRegex, splitEvents, out exitSection);
+                bool successSplit = SplitSIAEvents(message, partitionWithMultipleEventsRegex, splitEvents, out exitSection);
                 if (successSplit)
                 {
                     // This is the default SIA protocol sequence /ri/id/pi
@@ -252,8 +259,7 @@ namespace M2M.SiaSplittingTestingTool
                 else
                 {
                     // Check the rarely found sequence /pi/id/ri
-                    partitionSectionRegex = aiRegex + dateTimeRegex + moduleRegex + userRegex + groupRegex + eventsRegex;
-                    successSplit = SplitSIAEvents(message, partitionSectionRegex, splitEvents, out exitSection);
+                    successSplit = SplitSIAEvents(message, partitionWithMultipleEventsRegex2, splitEvents, out exitSection);
                 }
 
                 if (!successSplit)
@@ -261,32 +267,32 @@ namespace M2M.SiaSplittingTestingTool
                     splitEvents.Add(message);
                 }
             }
-        }
 
-        private static bool SplitSIAEvents(string message, string partitionSectionRegex, List<string> splitEvents, out SiaExitSection exitSection)
+            return splitEvents;
+        }
+        private static bool SplitSIAEvents(string message, string partitionSectionRegex, List<string> splitEvents, out SiaSplitResult exitSection)
         {
             bool success = false;
             string regexTmplExtended = @"^" + accountNoRegex + @"([|]N(?<partitions>" + partitionSectionRegex + @")+)+$";
 
-            Regex regexExtended = new Regex(regexTmplExtended);
-            Match matchExtended = regexExtended.Match(message);
-
+            Match matchExtended = MatchTemplate(message, regexTmplExtended);
             if (matchExtended != null && matchExtended.Success && matchExtended.Groups["partitions"].Success &&
                 matchExtended.Groups["accountno"].Success && matchExtended.Groups["events"].Success && matchExtended.Groups["events"].Captures != null && matchExtended.Groups["events"].Captures.Count > 1)
             {
-
+                string accountNo = matchExtended.Groups["accountno"].Value;
                 // This is 95% of all events
                 if (matchExtended.Groups["partitions"].Captures.Count == 1)
                 {
-                    exitSection = SiaExitSection.MoreEventsOnePartition;
+                    // Single partition multiple events (95% of cases)
+                    exitSection = SiaSplitResult.MoreEventsOnePartition;
 
-                    string eventPrefix = GenerateEventPrefix(matchExtended, matchExtended);
+                    string eventPrefix = GenerateEventPrefix(accountNo, matchExtended);
 
                     for (int i = 0; i < matchExtended.Groups["events"].Captures.Count; i++)
                     {
                         string eventCapture = matchExtended.Groups["events"].Captures[i].Value;
 
-                        string? additionalCapture = null;
+                        string additionalCapture = null;
                         if (matchExtended.Groups["additional"].Success)
                         {
                             additionalCapture = matchExtended.Groups["additional"].Captures[i].Value;
@@ -298,25 +304,25 @@ namespace M2M.SiaSplittingTestingTool
                 }
                 else
                 {
-                    exitSection = SiaExitSection.MoreEventsMorePartitions;
+                    // Multiple partitions with multiple events
+                    exitSection = SiaSplitResult.MoreEventsMorePartitions;
 
                     for (int p = 0; p < matchExtended.Groups["partitions"].Captures.Count; p++)
                     {
                         //var regexTmpl1 = "^(?<time>/?ti\\d{1,2}:\\d{1,2})?(?<group>/?ri\\w{1,2})?(?<user>/?id\\w{1,4})?(?<module>/?pi\\w{1,3})?((?<events>/[A-Z]{2}(?:\\w{1,10})?)(?<additional>([*]'[^/]+)))+$";
                         //var regexTmpl1 = "^(?<time>/?ti\\d{1,2}:\\d{1,2}(:\\d{1,2})?)?(?<group>/?ri\\w{1,4})?(?<user>/?id\\w{1,4})?(?<module>/?pi\\w{1,3})?((?<events>/?[A-Z]{2}(?:\\w{1,10})?)(?<additional>(\\^[^\\\\^]+\\^)|([*]'?[^/|]+)))+$";                             
-
-                        Regex regex1 = new Regex(partitionSectionRegex);
-                        Match match1 = regex1.Match(matchExtended.Groups["partitions"].Captures[p].Value);
+                        string partitionMatch = matchExtended.Groups["partitions"].Captures[p].Value;
+                        Match match1 = MatchTemplate(partitionMatch, partitionSectionRegex);
 
                         if (match1 != null && match1.Success && match1.Groups["events"].Success && match1.Groups["events"].Captures != null && match1.Groups["events"].Captures.Count > 1)
                         {
-                            string eventPrefix = GenerateEventPrefix(matchExtended, match1);
+                            string eventPrefix = GenerateEventPrefix(accountNo, match1);
 
                             for (int i = 0; i < match1.Groups["events"].Captures.Count; i++)
                             {
                                 string eventCapture = match1.Groups["events"].Captures[i].Value;
 
-                                string? additionalCapture = null;
+                                string additionalCapture = null;
                                 if (match1.Groups["additional"].Success)
                                 {
                                     additionalCapture = match1.Groups["additional"].Value;
@@ -331,10 +337,10 @@ namespace M2M.SiaSplittingTestingTool
                             StringBuilder sbLog = new StringBuilder();
 
                             sbLog.Append("#");
-                            sbLog.Append(matchExtended.Groups["accountno"].Value);
+                            sbLog.Append(accountNo);
                             sbLog.Append("|N");
 
-                            sbLog.Append(RemoveLeadingSlash(matchExtended.Groups["partitions"].Captures[p].Value));
+                            sbLog.Append(RemoveLeadingSlash(partitionMatch));
 
                             splitEvents.Add(sbLog.ToString());
                         }
@@ -376,24 +382,24 @@ namespace M2M.SiaSplittingTestingTool
                 string partitionAndAdditionalSectionRegex = partitionSectionRegex + additionalRegex;
                 string regexTmpl = @"^" + accountNoRegex + @"([|]N(?<partitions>" + partitionAndAdditionalSectionRegex + @")+)+$";
 
-                Regex regex = new Regex(regexTmpl);
-                Match match = regex.Match(message);
-
+                Match match = MatchTemplate(message, regexTmpl);
                 if (match != null && match.Success && match.Groups["partitions"].Success &&
                 match.Groups["accountno"].Success && match.Groups["events"].Success && match.Groups["events"].Captures != null && match.Groups["events"].Captures.Count > 1)
                 {
+                    string accountNo = match.Groups["accountno"].Value;
                     // This is 95% of all events
                     if (match.Groups["partitions"].Captures.Count == 1)
                     {
-                        exitSection = SiaExitSection.MoreEventsSecondTryOnePartition;
+                        // Single partition with multiple events (second attempt)
+                        exitSection = SiaSplitResult.MoreEventsSecondTryOnePartition;
 
-                        string eventPrefix = GenerateEventPrefix(match, match);
+                        string eventPrefix = GenerateEventPrefix(accountNo, match);
 
                         for (int i = 0; i < match.Groups["events"].Captures.Count; i++)
                         {
                             string eventCapture = match.Groups["events"].Captures[i].Value;
 
-                            string? additionalCapture = null;
+                            string additionalCapture = null;
                             if (match.Groups["additional"].Success)
                             {
                                 additionalCapture = match.Groups["additional"].Value;
@@ -405,28 +411,32 @@ namespace M2M.SiaSplittingTestingTool
                     }
                     else
                     {
-                        exitSection = SiaExitSection.MoreEventsSecondTryMorePartitions;
+                        // Multiple partitions with multiple events (second attempt)  
+                        exitSection = SiaSplitResult.MoreEventsSecondTryMorePartitions;
+
                         for (int p = 0; p < match.Groups["partitions"].Captures.Count; p++)
                         {
                             //regexTmpl = "^(?<time>/?ti\\d{1,2}:\\d{1,2})?(?<group>/?ri\\w{1,2})?(?<user>/?id\\w{1,4})?(?<module>/?pi\\w{1,3})?(?<events>/?[A-Z]{2}(?:\\w{1,4})?)+(?<additional>([|]A[^|]*)*)$";
-
                             //regexTmpl = @"^(?<time>/?ti\\d{1,2}:\\d{1,2})?(?<group>/?ri\\w{1,2})?(?<user>/?id\\w{1,4})?(?<module>/?pi\\w{1,3})?(?<events>/?[A-Z]{2}(?:\\w{1,10})?)+(?<additional>([|/]A[^|]*)*)$";
 
-                            Regex regex1 = new Regex(partitionAndAdditionalSectionRegex);
-                            Match match1 = regex1.Match(match.Groups["partitions"].Captures[p].Value);
-
+                            string partitionMatch = match.Groups["partitions"].Captures[p].Value;
+                            Match match1 = MatchTemplate(partitionMatch, partitionAndAdditionalSectionRegex);
                             if (match1 != null && match1.Success && match1.Groups["events"].Success && match1.Groups["events"].Captures != null && match1.Groups["events"].Captures.Count > 1)
                             {
-                                string eventPrefix = GenerateEventPrefix(match, match1);
+                                string eventPrefix = GenerateEventPrefix(accountNo, match1);
 
                                 for (int i = 0; i < match1.Groups["events"].Captures.Count; i++)
                                 {
-                                    string eventCapture = match.Groups["events"].Captures[i].Value;
+                                    string eventCapture = match1.Groups["events"].Captures[i].Value;
 
-                                    string? additionalCapture = null;
+                                    string additionalCapture = null;
                                     if (match1.Groups["additional"].Success)
                                     {
                                         additionalCapture = match1.Groups["additional"].Value;
+                                        if (additionalCapture.StartsWith("/A"))
+                                        {
+                                            additionalCapture = "|" + additionalCapture.Substring(1);
+                                        }
                                     }
 
                                     string splitEvent = GenerateEvent(eventPrefix, eventCapture, additionalCapture);
@@ -438,11 +448,11 @@ namespace M2M.SiaSplittingTestingTool
                                 StringBuilder sbLog = new StringBuilder();
 
                                 sbLog.Append("#");
-                                sbLog.Append(match.Groups["accountno"].Value);
+                                sbLog.Append(accountNo);
                                 sbLog.Append("|N");
 
                                 //#1234|Nri10/YT100|ABattery Fault ;|ABatt
-                                string partition = RemoveLeadingSlash(match.Groups["partitions"].Captures[p].Value);
+                                string partition = RemoveLeadingSlash(partitionMatch);
                                 int indexIdx = partition.IndexOf("|A");
                                 if (indexIdx != -1)
                                 {
@@ -484,13 +494,12 @@ namespace M2M.SiaSplittingTestingTool
                     // This is now the same as the previous match
                     //regexTmpl = @"^" + accountNoRegex + @"([|]N(?<partitions>" + aiRegex + dateTimeRegex + groupRegex + userRegex + moduleRegex + eventsRegex + additionalRegex + @")+)+$";
 
-                    Regex regex1 = new Regex(regexTmpl);
-                    Match match1 = regex1.Match(message);
-
+                    Match match1 = MatchTemplate(message, regexTmpl);
                     if (match1 != null && match1.Success && match1.Groups["accountno"].Success &&
                         match1.Groups["events"].Success && match1.Groups["events"].Captures != null && match1.Groups["events"].Captures.Count > 1)
                     {
-                        exitSection = SiaExitSection.MoreEventsThirdTry;
+                        exitSection = SiaSplitResult.MoreEventsThirdTry;
+
                         for (int e = 0; e < match1.Groups["events"].Captures.Count; e++)
                         {
                             StringBuilder sbLogEvent = new StringBuilder();
@@ -507,7 +516,8 @@ namespace M2M.SiaSplittingTestingTool
                     {
                         if (matchExtended?.Success is true || match?.Success is true || match1?.Success is true)
                         {
-                            exitSection = SiaExitSection.OneEventCapture;
+                            exitSection = SiaSplitResult.OneEventCapture;
+
                             success = true;
 
                             //#1234|Nri10/YT100|ABattery Fault ;|ABatt
@@ -543,7 +553,8 @@ namespace M2M.SiaSplittingTestingTool
                         }
                         else
                         {
-                            exitSection = SiaExitSection.NoSplit;
+                            exitSection = SiaSplitResult.NoSplit;
+
                             success = false;
                         }
                     }
@@ -556,12 +567,33 @@ namespace M2M.SiaSplittingTestingTool
                 // It is possible that the Regex is missing some of the formats, so we will just keep the event unmodified
                 //splitEvents.Add(message);
 
-                exitSection = SiaExitSection.NoSplit;
+                // The existing TimeOut value (8) stays the same for regex timeout cases
+                exitSection = SiaSplitResult.NoSplit;
+
                 success = false;
             }
 
             return success;
         }
+
+        private static TimeSpan regexTimeout = TimeSpan.FromSeconds(1);
+        private static Match MatchTemplate(string message, string regexTemplate)
+        {
+            Match match = null;
+            try
+            {
+                Regex regex = new Regex(regexTemplate, RegexOptions.None, regexTimeout);
+                match = regex.Match(message);
+            }
+            catch (RegexMatchTimeoutException ex)
+            {
+                // Handle timeout appropriately
+                match = null;
+            }
+
+            return match;
+        }
+
         static string RemoveLeadingSlash(string s)
         {
             if (string.IsNullOrEmpty(s))
@@ -578,22 +610,37 @@ namespace M2M.SiaSplittingTestingTool
                 return s;
             }
         }
-        static string RemoveEndingSlash(string s)
+        static string RemoveTrailingSlash(string s)
         {
             if (string.IsNullOrEmpty(s))
             {
                 return s;
             }
 
-            if (s.EndsWith("/") || s.EndsWith("|"))
+            while (s.EndsWith("/") || s.EndsWith("|"))
             {
-                return s.Substring(0, s.Length - 1);
+                s = s.Substring(0, s.Length - 1);
             }
-            else
+
+            return s;
+        }
+
+        static string RemoveTrailingNs(string s)
+        {
+            if (string.IsNullOrEmpty(s))
             {
                 return s;
             }
+
+            string trailingN = "|N";
+            while (s.EndsWith(trailingN))
+            {
+                s = s.Substring(0, s.Length - trailingN.Length);
+            }
+
+            return s;
         }
+
         static string AppendMissingAdditionalSectionHeader(string message, string pattern)
         {
             // For example, if pattern is "Xmit"
@@ -627,7 +674,7 @@ namespace M2M.SiaSplittingTestingTool
                     else if (matchReg.Value[1] == '|' && matchReg.Value[2] == 'A' && matchReg.Value[3] == '=')
                     {
                         return matchReg.Value;
-                    } 
+                    }
                     // ??Xmit
                     else if (matchReg.Value[0] != '|' && matchReg.Value[1] != 'A')
                     {
@@ -643,15 +690,31 @@ namespace M2M.SiaSplittingTestingTool
             }
             return message;
         }
-        static string GenerateEventPrefix(Match match, Match match1)
+        static string GenerateEventPrefix(string accountNo, Match match1)
         {
             StringBuilder sbLog = new StringBuilder();
 
             sbLog.Append("#");
-            sbLog.Append(match.Groups["accountno"].Value);
+            sbLog.Append(accountNo);
             sbLog.Append("|N");
 
             bool firstPartitionElementAppended = false;
+
+            if (match1.Groups["aisection"].Success)
+            {
+                string aisection = firstPartitionElementAppended ? match1.Groups["aisection"].Value : RemoveLeadingSlash(match1.Groups["aisection"].Value);
+
+                sbLog.Append(aisection);
+                firstPartitionElementAppended = true;
+            }
+
+            if (match1.Groups["date"].Success)
+            {
+                string date = firstPartitionElementAppended ? match1.Groups["date"].Value : RemoveLeadingSlash(match1.Groups["date"].Value);
+
+                sbLog.Append(date);
+                firstPartitionElementAppended = true;
+            }
 
             if (match1.Groups["time"].Success)
             {
@@ -686,7 +749,7 @@ namespace M2M.SiaSplittingTestingTool
 
             return sbLog.ToString();
         }
-        static string GenerateEvent(string eventPrefix, string eventCapture, string? additionalCapture)
+        static string GenerateEvent(string eventPrefix, string eventCapture, string additionalCapture)
         {
             StringBuilder sbLogEvent = new StringBuilder();
 
